@@ -4,15 +4,18 @@ import (
     "testing"
 )
 
+
+// Test cases for the regression test (grid is expected to be in interval [0, 6) with the step 0.1)
 type SimpleTestCase struct {
-    vertices []Vertex
-    x_in []float64
-    y_in []float64
-    x_out []float64
-    y_out []float64
+    vertices    []Vertex    // Vertices of the polygon (clockwise logic)
+    x_in        []float64   // Horizontal coordinates of points expected to be inside of polygon
+    y_in        []float64   // Vertical coordinates of points expected to be inside of polygon
+    x_out       []float64   // Horizontal coordinates of points expected to be outside of polygon
+    y_out       []float64   // Vertical coordinates of points expected to be outside of polygon
 }
 
 
+// Regression test of the Ray Casting Algorithm
 func TestPolygon_PipRayCastingAlgorithm(t *testing.T) {
     // Logic of the tuples in the list: veritices, x_in, y_in, x_out, y_out
     //  where _in means that point is inside polygon, _out means outside.

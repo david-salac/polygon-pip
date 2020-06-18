@@ -8,7 +8,7 @@ import (
 )
 
 
-// Do the IEEE double precision float (64 bit) delta comparison
+// Do the IEEE double precision float (64 bit) delta comparison (with delta = 0.0001)
 func DeltaCompare(a, b float64) bool {
     // Delta used for comparisons
     DELTA := 0.0001
@@ -19,39 +19,44 @@ func DeltaCompare(a, b float64) bool {
 
 // Vertex (point) of the polygon.
 type Vertex struct {
-    CoordX float64 // Horizontal position of the point.
-    CoordY float64 // Vertical position of the point.
+    CoordX  float64     // Horizontal position of the point.
+    CoordY  float64     // Vertical position of the point.
 }
 
 
-// Edge (line) of the polygon. All edges has to be added clockwise.
+// Edge (line) of the polygon. All Edges has to be added following clockwise logic.
 type Edge struct {
-    CoordXStart         float64 // horizontal (CoordX) axes of the starting vertex.
-    CoordYStart         float64 // vertical (CoordY) axes of the starting vertex.
-    CoordXEnd           float64 // horizontal (CoordX) axes of the ending vertex.
-    CoordYEnd           float64 // vertical (CoordY) axes of the ending vertex.
-    Singular            bool    // singular edge is horizontal or vertical.
-    SingularByX         bool    // if true, edge is a vertical line, if false, horizontal, relevant only to Singular.
-    LinearCoefficient   float64 // linear coefficient of the edge line.
-    AbsoluteCoefficient float64 // absolute coefficient of the edge line.
+    CoordXStart         float64 // Horizontal coordinates of starting vertex
+    CoordYStart         float64 // Vertical coordinates of starting vertex
+    CoordXEnd           float64 // Horizontal coordinates of ending vertex
+    CoordYEnd           float64 // Vertical coordinates of ending vertex
+    Singular            bool    // If true, edge is either horizontal or vertical line
+    SingularByX         bool    // If singular and true, edge is horizontal line, vertical otherwise
+    LinearCoefficient   float64 // If non-singular, linear coefficient of the line defining edge
+    AbsoluteCoefficient float64 // If non-singular, absolute coefficient of the line defining edge
 }
 
 
 // Create a new edge from vertices
-func NewEdge(vertex_start, vertex_end *Vertex) (*Edge, error) {
+// vertexStart is the starting point (vertex) of the polygon
+// vertexEnd is the ending point (vertex) of the polygon
+func NewEdge(vertexStart, vertexEnd *Vertex) (*Edge, error) {
     edge := &Edge{
-        CoordXStart:         vertex_start.CoordX,
-        CoordYStart:         vertex_start.CoordY,
-        CoordXEnd:           vertex_end.CoordX,
-        CoordYEnd:           vertex_end.CoordY,
-        Singular:            true,
-        SingularByX:         true, // Horizontal line
-        LinearCoefficient:   0.0,
-        AbsoluteCoefficient: 0.0}
+        CoordXStart:         vertexStart.CoordX, // Horizontal coordinates of starting vertex
+        CoordYStart:         vertexStart.CoordY, // Vertical coordinates of starting vertex
+        CoordXEnd:           vertexEnd.CoordX,   // Horizontal coordinates of ending vertex
+        CoordYEnd:           vertexEnd.CoordY,   // Vertical coordinates of ending vertex
+        Singular:            true,               // If true, edge is either horizontal or vertical line
+        SingularByX:         true,               // If singular and true, edge is horizontal line, vertical otherwise
+        LinearCoefficient:   0.0,                // If non-singular, linear coefficient of the line defining edge
+        AbsoluteCoefficient: 0.0,                // If non-singular, absolute coefficient of the line defining edge
+    }
 
+    // In the case of horizontal line
     if DeltaCompare(edge.CoordXStart, edge.CoordXEnd) {
-        edge.SingularByX = false // Vertical line
-        if DeltaCompare(edge.CoordYStart, edge.CoordYEnd) {
+        edge.SingularByX = false // If not horizontal then vertical line (or none if non-singular)
+        if DeltaCompare(edge.CoordYStart, edge.CoordYEnd) {  // Edge cannot be a point!
+            // Construct the error string
             var error_string strings.Builder
             error_string.WriteString("edge cannot be a point CoordX: (")
             error_string.WriteString(fmt.Sprintf("%f", edge.CoordXStart))
@@ -65,6 +70,8 @@ func NewEdge(vertex_start, vertex_end *Vertex) (*Edge, error) {
             return nil, errors.New(error_string.String())
         }
     }
+
+    // Standard case (edge is described by the linear equation)
     if !DeltaCompare(edge.CoordXStart, edge.CoordXEnd) &&
         !DeltaCompare(edge.CoordYStart, edge.CoordYEnd) {
         edge.Singular = false // Not a horizontal or vertical line
@@ -79,30 +86,36 @@ func NewEdge(vertex_start, vertex_end *Vertex) (*Edge, error) {
 
 // Compute with the edge of the ray coming from the point on position (CoordX, CoordY)
 //  and defined by the linear and absolute coefficient (line).
-func (edge *Edge) RayIntersect(linear_coefficient, absolute_coefficient, x, y float64) bool {
-    if edge.Singular {
-        if edge.SingularByX { // Horizontal line
+// linearCoefficient is the linear coefficient of the ray coming from the point (x, y)
+// absoluteCoefficient is the absolute coefficient of the ray coming from the point (x, y)
+// x is the horizontal coordinates of the point from that ray is emitted
+// y is the vertical coordinates of the point from that ray is emitted
+// returns true if the ray intersect the edge
+func (edge *Edge) RayIntersect(linearCoefficient, absoluteCoefficient, x, y float64) bool {
+    if edge.Singular {  // The case when the edge is horizontal/vertical line
+        if edge.SingularByX {  // Horizontal line:
             // Singular by CoordX (CoordX is point)
-            x_val := (edge.CoordYEnd - absolute_coefficient) / linear_coefficient
-            // Remove corner cases
+            x_val := (edge.CoordYEnd - absoluteCoefficient) / linearCoefficient
+            // Remove corner cases (only one edge can be considered)
             if x_val == edge.CoordXStart {
                 return false
             }
-            // On line case
+            // Analyse the intersection
             if x_val <= math.Max(edge.CoordXStart, edge.CoordXEnd) &&
                 x_val >= math.Min(edge.CoordXStart, edge.CoordXEnd) {
                 if x < x_val && y < edge.CoordYStart {
                     return true
                 }
             }
-        } else {  // Vertical line
+        } else {  // Vertical line:
             // Singular by CoordY (CoordY point)
             // follows logic: CoordX = (CoordY - abs_coef) / lin_coef
-            y_val := linear_coefficient * edge.CoordXEnd + absolute_coefficient
-            // Remove corner cases
+            y_val := linearCoefficient* edge.CoordXEnd + absoluteCoefficient
+            // Remove corner cases (only one edge can be considered)
             if y_val == edge.CoordYStart {
                 return false
             }
+            // Analyse the intersection
             if y_val <= math.Max(edge.CoordYStart, edge.CoordYEnd) &&
                 y_val >= math.Min(edge.CoordYStart, edge.CoordYEnd) {
                 if x < edge.CoordXStart && y < y_val {
@@ -114,11 +127,13 @@ func (edge *Edge) RayIntersect(linear_coefficient, absolute_coefficient, x, y fl
     }
 
     // Singular case where lines are parallel
-    if DeltaCompare(edge.LinearCoefficient, linear_coefficient) {
-        if DeltaCompare(edge.AbsoluteCoefficient, absolute_coefficient) {
-            if x == edge.CoordXStart && y == edge.CoordYStart { // Remove corner cases
+    if DeltaCompare(edge.LinearCoefficient, linearCoefficient) {
+        if DeltaCompare(edge.AbsoluteCoefficient, absoluteCoefficient) {
+            // Remove corner cases (only one edge can be considered)
+            if x == edge.CoordXStart && y == edge.CoordYStart {
                 return false
             }
+            // Analyse the intersection
             if x >= math.Min(edge.CoordXStart, edge.CoordXEnd) &&
                 x <= math.Max(edge.CoordXStart, edge.CoordXEnd) &&
                 y <= math.Max(edge.CoordYStart, edge.CoordYEnd) &&
@@ -129,7 +144,7 @@ func (edge *Edge) RayIntersect(linear_coefficient, absolute_coefficient, x, y fl
     }
 
     // else (typical case) - two non parallel lines (ray and line)
-    x_val := (absolute_coefficient - edge.AbsoluteCoefficient) / (edge.LinearCoefficient - linear_coefficient)
+    x_val := (absoluteCoefficient - edge.AbsoluteCoefficient) / (edge.LinearCoefficient - linearCoefficient)
     y_val := edge.LinearCoefficient * x_val + edge.AbsoluteCoefficient
 
     // Remove corner cases
@@ -148,6 +163,8 @@ func (edge *Edge) RayIntersect(linear_coefficient, absolute_coefficient, x, y fl
     return false
 }
 
+
+// Determine if the point (x, y) lies on the line
 func (edge *Edge) OnLine(x, y float64) bool  {
     if edge.Singular {
         if edge.SingularByX {
@@ -167,7 +184,7 @@ func (edge *Edge) OnLine(x, y float64) bool  {
         }
         return false
     }
-    // else (typical case)
+    // else (typical case, non strictly horizontal/vertical line defined by the linear equation)
     y_val := edge.LinearCoefficient* x + edge.AbsoluteCoefficient
     if DeltaCompare(y, y_val) {
         if x <= math.Max(edge.CoordXStart, edge.CoordXEnd) && x >= math.Min(edge.CoordXStart, edge.CoordXEnd) {
@@ -181,12 +198,14 @@ func (edge *Edge) OnLine(x, y float64) bool  {
 }
 
 
+// Polygon definition
 type Polygon struct {
-    boundary_box [4]float64
-    edges []Edge
+    BoundaryBox [4]float64  // Boundaries of the polygon (minimal rectangle containing polygon)
+    Edges       []Edge      // Edges of the polygon (clock-wise logic)
 }
 
 
+// Create new polygon from vertices (sorted clockwise)
 func NewPolygon(vertices []Vertex) (*Polygon, error) {
     if len(vertices) < 3 {
         return nil, errors.New("only a regular polygon is acceptable (with 3 or more vertices)")
@@ -197,7 +216,7 @@ func NewPolygon(vertices []Vertex) (*Polygon, error) {
     var y_max float64
     var y_min float64
 
-    polygon := &Polygon{boundary_box: [4]float64{0, 0, 0, 0}, edges: make([]Edge, len(vertices))}
+    polygon := &Polygon{BoundaryBox: [4]float64{0, 0, 0, 0}, Edges: make([]Edge, len(vertices))}
 
     for i, vertex := range vertices {
         if i == 0 {
@@ -211,7 +230,7 @@ func NewPolygon(vertices []Vertex) (*Polygon, error) {
                 return nil, err
             } else {
                 // If there is no error assign new edge
-                polygon.edges[i - 1] = *new_edge
+                polygon.Edges[i - 1] = *new_edge
             }
             // Re-compute bounding box
             if x_max < vertex.CoordX {
@@ -228,38 +247,39 @@ func NewPolygon(vertices []Vertex) (*Polygon, error) {
             }
         }
     }
-    polygon.boundary_box = [4]float64{x_max, x_min, y_max, y_min}
+    polygon.BoundaryBox = [4]float64{x_max, x_min, y_max, y_min}
 
     if new_edge, err := NewEdge(&vertices[len(vertices) - 1], &vertices[0]); err != nil {
         return nil, err
     } else {
         // If there is no error assign new edge
-        polygon.edges[len(vertices) - 1] = *new_edge
+        polygon.Edges[len(vertices) - 1] = *new_edge
     }
 
     return polygon, nil
 }
 
-func (polygon *Polygon) PipRayCastingAlgorithm(x, y float64) bool {
 
+// Implementation of the ray casting algorithm for solving of the Point In the Polygon (PIP) problem.
+func (polygon *Polygon) PipRayCastingAlgorithm(x, y float64) bool {
     // Check the boundary box (if it is outside of BB, return false)
-    if x > polygon.boundary_box[0] + 0.0001 {
+    if x > polygon.BoundaryBox[0] + 0.0001 {
         return false
     }
-    if x < polygon.boundary_box[1] - 0.0001 {
+    if x < polygon.BoundaryBox[1] - 0.0001 {
         return false
     }
-    if y > polygon.boundary_box[2] + 0.0001 {
+    if y > polygon.BoundaryBox[2] + 0.0001 {
         return false
     }
-    if y < polygon.boundary_box[3] - 0.0001 {
+    if y < polygon.BoundaryBox[3] - 0.0001 {
         return false
     }
     // Probe the standard case
     linear_coefficient := 0.957218876
     absolute_coefficient := y - x * linear_coefficient
     counter_of_intersections := 0
-    for _, edge := range polygon.edges {
+    for _, edge := range polygon.Edges {
         // If the point is on the edge, return true
         if edge.OnLine(x, y) {
             return true
