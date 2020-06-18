@@ -1,7 +1,6 @@
 package polygon_pip
 
 import (
-    "fmt"
     "solar_algorithms/factories"
     "solar_algorithms/num_go"
     "testing"
@@ -612,7 +611,6 @@ func TestPolygon_PipRayCastingAlgorithm(t *testing.T) {
                     }
                 }
             }
-            fmt.Printf("count in: %v, count out: %v", count_in, count_out)
         }
     }
 
