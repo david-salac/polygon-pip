@@ -54,7 +54,6 @@ Edge::Edge(Vertex start, Vertex end) :
  */
 Edge::Edge(std::tuple<double, double> start, std::tuple<double, double> end) :
     Edge(Vertex(std::get<0>(start), std::get<1>(start)), Vertex(std::get<0>(end), std::get<1>(end))) {
-
 }
 
 
@@ -67,7 +66,7 @@ Edge::Edge(std::tuple<double, double> start, std::tuple<double, double> end) :
  * @param y coordinates of the point from that ray is emitted
  * @return true if the ray intersect the edge, false otherwise
  */
-bool Edge::RayIntersect(double linearCoefficient, double absoluteCoefficient, double x, double y) {
+bool Edge::RayIntersect(double linearCoefficient, double absoluteCoefficient, double x, double y) const {
     if (this->singular) {  // The case when the edge is horizontal/vertical line
         if (this->singularByX) {  // Horizontal line:
             // Singular by CoordX (CoordX is point)
@@ -146,7 +145,7 @@ bool Edge::RayIntersect(double linearCoefficient, double absoluteCoefficient, do
  * @param y vertical position of the point
  * @return true if the edge is on the line, false otherwise
  */
-bool Edge::OnLine(double x, double y) {
+bool Edge::OnLine(double x, double y) const {
     if (this->singular) {
         if (this->singularByX) {
             // Singular by CoordX (CoordY is point)
@@ -166,7 +165,7 @@ bool Edge::OnLine(double x, double y) {
         return false;
     }
     // else (typical case, non strictly horizontal/vertical line defined by the linear equation)
-    double y_val = this->linearCoefficient* x + this->absoluteCoefficient;
+    double y_val = this->linearCoefficient * x + this->absoluteCoefficient;
     if (DeltaCompare(y, y_val)) {
         if (x <= std::max(this->coordXStart, this->coordXEnd) && x >= std::min(this->coordXStart, this->coordXEnd)) {
             return true;
@@ -202,8 +201,8 @@ Polygon::Polygon(std::vector<std::tuple<double, double>> vertices):
         if (i == 0) {
             // Assign first values to the border box
             x_max = std::get<0>(vertex);
-            x_min = std::get<1>(vertex);
-            y_max = std::get<0>(vertex);
+            x_min = std::get<0>(vertex);
+            y_max = std::get<1>(vertex);
             y_min = std::get<1>(vertex);
         } else {
             // Assign new edge
@@ -222,8 +221,6 @@ Polygon::Polygon(std::vector<std::tuple<double, double>> vertices):
                 y_min = std::get<1>(vertex);
             }
         }
-        // Increment index
-        ++i;
     }
     this->boundaryBox = {x_max, x_min, y_max, y_min};
     // Create the last edge (from the last point to the first one
@@ -237,7 +234,7 @@ Polygon::Polygon(std::vector<std::tuple<double, double>> vertices):
  * @param y vertical position
  * @return true if the point is inside of the polygon or on the edge, false otherwise
  */
-bool Polygon::PIPRayCastingAlgorithm(double x, double y) {
+bool Polygon::PipRayCastingAlgorithm(double x, double y) const {
     // Check the boundary box (if it is outside of BB, return false)
     if (x > this->boundaryBox[0] + DELTA) {
         return false;
@@ -271,4 +268,25 @@ bool Polygon::PIPRayCastingAlgorithm(double x, double y) {
         return true;
     }
     return false;
+}
+
+
+/**
+ * Return the reference to edges
+ * @return edges in the polygon
+ */
+const std::vector<Edge>& Polygon::Edges() const {
+    return this->edges;
+}
+
+
+/**
+ * Get starting and ending vertex defining the edge
+ * @return starting and ending vertex defining the edge
+ */
+std::tuple<Vertex, Vertex> Edge::Vertices() const {
+    return std::make_tuple(
+        Vertex{this->coordXStart, this->coordYStart},
+        Vertex{this->coordXEnd, this->coordYEnd}
+    );
 }

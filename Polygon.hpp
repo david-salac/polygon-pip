@@ -1,7 +1,3 @@
-//
-// Created by david on 20/06/2020.
-//
-
 #ifndef WEATHER_TO_POWER_POLYGON_HPP
 #define WEATHER_TO_POWER_POLYGON_HPP
 
@@ -13,10 +9,10 @@
 const double DELTA = 0.0001;
 
 
-struct Vertex {
+class Vertex {
 public:
-    double coordX;
-    double coordY;
+    double coordX;  // Horizontal coordinate
+    double coordY;  // Vertical coordinate
 };
 
 
@@ -33,8 +29,9 @@ private:
 public:
     Edge(Vertex start, Vertex end);
     Edge(std::tuple<double, double> start, std::tuple<double, double> end);
-    bool RayIntersect(double linearCoefficient, double absoluteCoefficient, double x, double y);
-    bool OnLine(double x, double y);
+    bool RayIntersect(double linearCoefficient, double absoluteCoefficient, double x, double y) const;
+    bool OnLine(double x, double y) const;
+    std::tuple<Vertex, Vertex> Vertices() const;
 };
 
 
@@ -44,7 +41,8 @@ private:
     std::vector<Edge> edges;
 public:
     Polygon(std::vector<std::tuple<double, double>> vertices);
-    bool PIPRayCastingAlgorithm(double x, double y);
+    bool PipRayCastingAlgorithm(double x, double y) const;
+    const std::vector<Edge>& Edges() const;
 };
 
 
