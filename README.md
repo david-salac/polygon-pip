@@ -1,10 +1,12 @@
-# Python and Go implementation of the Ray Casting Algorithm (PIP)
+# Python, C++ and Go implementation of the Ray Casting Algorithm (PIP)
 Author: David Salac <http://www.github.com/david-salac>
 
-Python and Go implementation of the Ray Casting algorithm for solving of the
-Point In the Polygon (PIP) problem. The Ray Casting algorithm represents
+Python, C++ Go implementation of the Ray Casting algorithm for solving of 
+the Point In the Polygon (PIP) problem. The Ray Casting algorithm represents
 a simple method for determining if an arbitrary point is inside polygon
-or outside. 
+or outside.
+
+All the versions (languages) are located in dedicated GIT branches. 
 
 ## Description
 One of the common task in many fields (like GIS) is to determine if an
@@ -124,3 +126,46 @@ inside of the polygon and false if outside.
 
 Polygon can be created using constructor that accepts an array of indices
 as the parameter.
+
+## C++ version
+Version in C++ (version C++ 17):
+```
+#include "Polygon.hpp"
+
+// Create list of vertices
+std::vector<std::tuple<double, double>> vertices = std::vector<std::tuple<double, double>> {
+        std::make_tuple(2.0, 4.0),
+        std::make_tuple(3.0, 5.0),
+        std::make_tuple(4.0, 5.0),
+        std::make_tuple(5.0, 4.0),
+        std::make_tuple(4.0, 3.0),
+        std::make_tuple(5.0, 1.0),
+        std::make_tuple(4.0, 1.0),
+        std::make_tuple(4.0, 2.0),
+        std::make_tuple(3.0, 4.0)
+    };
+
+// Create new polygon
+Polygon polygon(vertices);
+
+// Create vectors of coordinates of points inside/outside the polygon
+std::vector<std::tuple<double, double>> pointsIn;
+std::vector<std::tuple<double, double>> pointsOut;
+for (double x = 0.0; x < 6.0; x += 0.1) {
+    for (double y = 0.0; y < 6.0; y += 0.1) {
+        // Test if the point lies inside polygon (or on the edge)
+        if (polygon.PipRayCastingAlgorithm(x, y)) {
+            pointsIn.push_back(std::make_tuple(x, y));
+        } else {
+            // If not, append to the another list
+            pointsOut.push_back(std::make_tuple(x, y));
+        }
+    }
+}
+```
+The main function is the `Polygon::PipRayCastingAlgorithm(x, y)`
+this function returns true if the point with coordinates `(x, y)` is located
+inside of the polygon and false if outside.
+
+Polygon can be created using constructor that accepts an array of vertices
+(defined as the tuple of `x, y` coordinates) as the parameter.
