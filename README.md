@@ -4,7 +4,9 @@ Author: David Salac <http://www.github.com/david-salac>
 Python, C++ Go implementation of the Ray Casting algorithm for solving of 
 the Point In the Polygon (PIP) problem. The Ray Casting algorithm represents
 a simple method for determining if an arbitrary point is inside polygon
-or outside. 
+or outside.
+
+All the versions (languages) are located in dedicated GIT branches. 
 
 ## Description
 One of the common task in many fields (like GIS) is to determine if an
