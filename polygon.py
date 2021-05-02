@@ -1,4 +1,5 @@
 from typing import List, Tuple
+import random
 
 
 # Delta comparison value for determining strictly horizontal/vertical line.
@@ -267,9 +268,41 @@ class Polygon(object):
             return False
         if y < self.boundary_box[3]:
             return False
+
         # Probe the standard case
-        linear_coefficient = 0.957218876
+        linear_coefficient = 0.2683965184308071  # Some arbitrary number
         absolute_coefficient = y - x * linear_coefficient
+
+        # Check if the line does not intersect any edge:
+        search_continue = True
+        while search_continue:
+            # search_continue indicate the need to run through all ages again
+            search_continue = False
+            for edge in self.edges:
+                # Line intersect edge
+                intersect_edge = (
+                    abs(edge.x_start * linear_coefficient +
+                        absolute_coefficient - edge.y_start) < DELTA
+                    or abs(edge.x_end * linear_coefficient +
+                           absolute_coefficient - edge.y_end) < DELTA
+                )
+                # Starting point (x, y) is equal to probed point
+                starting_point_is_edge = \
+                    (abs(edge.x_start - x) < DELTA
+                     and abs(edge.y_start - y) < DELTA) or \
+                    (abs(edge.x_end - x) < DELTA
+                     and abs(edge.y_end - y) < DELTA)
+
+                if intersect_edge and not starting_point_is_edge:
+                    # Generate new random coefficients for line
+                    linear_coefficient = 0.2 + random.random() % 0.5
+                    absolute_coefficient = y - x * linear_coefficient
+                    # Need to run all edges one more time with new line def
+                    search_continue = True
+                    # No reason to continue
+                    break
+
+        # Run the standard PIP algorithm
         counter_of_intersections = 0
         for edge in self.edges:
             if edge.on_line(x, y):
@@ -278,6 +311,9 @@ class Polygon(object):
             if edge.intersect(linear_coefficient, absolute_coefficient, x, y):
                 counter_of_intersections += 1
 
+        # If number of intersection is odd, point is in polygon
         if counter_of_intersections % 2 == 1:
             return True
+
+        # If even, point is outside of polygon
         return False
